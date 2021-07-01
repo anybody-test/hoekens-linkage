@@ -1,0 +1,87 @@
+/*
+From Wikipedia:
+The Hoekens linkage is a four-bar mechanism that converts rotational motion 
+to approximate straight-line motion with approximate constant velocity.
+The precise design trades off straightness, lack of acceleration, and what 
+proportion of the driving rotation is spent in the linear portion of the full curve.
+The example to the right spends over half of the cycle in the near straight portion.
+*/
+
+#include "fourbar_template.any"
+#include "tracer_template.any"
+Main = {
+
+  AnyOperationSequence RunApplication = {
+    AnyOperation &ref =.Study.Kinematics;
+  };
+  
+    AnyVar BaseDistance = 0.2;
+    AnyVar Crank1 = 0.1;
+    AnyVar Crank2 = 0.25;
+    AnyVar Coupler = 0.25;
+    AnyVar Extender = 0.25;
+    
+    AnyFixedRefFrame GlobalRef = {
+      AnyRefNode g1  ={sRel = {0,0,0};};
+      AnyRefNode g2  ={sRel = {..BaseDistance ,0,0};};
+    };  // Global reference frame
+
+    
+    
+    Fourbar_template HoekensLinkage(
+    GND1 = .GlobalRef.g1,
+    GND2 = .GlobalRef.g2,
+    L_CRANK1 = .Crank1 ,
+    L_CRANK2 = .Crank2 ,
+    L_COUPLER = .Coupler 
+    ) = {
+      Coupler = {
+        AnyRefNode EndPoint = {sRel = .Crank2Node.sRel+{...Extender,0,0}; };
+        AnyDrawLine drw2 = {
+          p0 = .Crank1Node.sRel; p1 = .EndPoint.sRel;
+          Line.Thickness = 0.02;GlobalCoord = Off; Line.RGB = {0.5,0.5,1};
+          Line.End.Style  = Line3DCapStyleArrow ;
+        };
+      };
+//      AnyKinEqFourierDriver driver = 
+//      {
+//        Type = Cos;
+//        Freq = 1;
+//        A = {{pi,pi/2*1.9}};
+//        B = {{0,0}};
+//         AnyKinMeasureOrg KinRot = {
+//            AnyKinRotational Rot = {
+//               AnyRefFrame &ref = ...Crank1 ;
+//               Type = RotAxesAngles;
+//            };
+//            MeasureOrganizer = {0};
+//         };
+//      };
+      AnyKinEqSimpleDriver driver = 
+      {
+        DriverVel  ={2*pi};
+         AnyKinMeasureOrg KinRot = {
+            AnyKinRotational Rot = {
+               AnyRefFrame &ref = ...Crank1 ;
+               Type = RotAxesAngles;
+            };
+            MeasureOrganizer = {0};
+         };
+      };
+      
+  };
+//    
+  AnyKinStudy Study = {
+    nStep = 100;
+    tStart = 0;
+    tEnd = 1;
+    AnyFolder &Model = .HoekensLinkage;
+    tracer_template chart1(
+    ABS1 = "Main.Study.Output.Model.Coupler.EndPoint.r[0]",
+    ABS2 = "Main.Study.Output.Model.Coupler.EndPoint.r[1]",
+    VAL = "Main.Study.Output.Model.Coupler.EndPoint.r[2 ]"
+     ) = {};
+    Gravity = {0.0, -9.81, 0.0};
+  };
+
+};  // Main
